@@ -6,11 +6,16 @@ import numpy as np
 from snake_game import SnakeGameAI, Direction, Point
 from model import Linear_QNet, QTrainer
 from helper import plot
+import os
 
 BLOCK_SIZE = 20
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
+
+model_file = './model/model.pth'
+optimizer_file = './model/optimizer.pth'
+
 
 class Agent:
     def __init__(self):
@@ -21,6 +26,11 @@ class Agent:
         self.trainer = QTrainer(self.model, self.optimizer, self.gamma)
         self.n_games = 0
         self.epsilon = 0  # randomness
+
+        # Load state if it exists
+        if os.path.exists(model_file) and os.path.exists(optimizer_file):
+            self.model.load(model_file)
+            self.optimizer.load_state_dict(torch.load(optimizer_file))
 
     def get_state(self, game):
         head = game.snake[0]
@@ -92,6 +102,11 @@ class Agent:
 
         return final_move
 
+    def save_model(self):
+        self.model.save(model_file)
+        torch.save(self.optimizer.state_dict(), optimizer_file)
+
+
 def train():
     plot_scores = []
     plot_mean_scores = []
@@ -114,7 +129,7 @@ def train():
 
             if score > record:
                 record = score
-                agent.model.save()
+                agent.save_model()
 
             print('Game', agent.n_games, 'Score', score, 'Record:', record)
 
@@ -123,6 +138,7 @@ def train():
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
+
 
 if __name__ == '__main__':
     train()
